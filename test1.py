@@ -2,7 +2,8 @@ import gym
 import time
 
 #env = gym.make("SpaceInvaders-ram-v0")
-env = gym.make("CartPole-v0")
+# env = gym.make("CartPole-v0")
+env = gym.make("Marvin-v0")
 
 for i_episode in range(200):
 	observation = env.reset()
