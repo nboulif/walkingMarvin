@@ -587,11 +587,17 @@ class Marvin(gym.Env):
             if poly[0][0] > self.scroll + VIEWPORT_W/SCALE: continue
             self.viewer.draw_polygon(poly, color=color)
 
-        self.lidar_render = (self.lidar_render+1) % 100
-        i = self.lidar_render
-        if i < 2*len(self.lidar):
-            l = self.lidar[i] if i < len(self.lidar) else self.lidar[len(self.lidar)-i-1]
+        # self.lidar_render = (self.lidar_render+1) % 100
+        # i = self.lidar_render
+        # if i < 2*len(self.lidar):
+        #     l = self.lidar[i] if i < len(self.lidar) else self.lidar[len(self.lidar)-i-1]
+        #     self.viewer.draw_polyline( [l.p1, l.p2], color=(1,0,0), linewidth=1 )
+        
+        for i in range(10):
+
+            l = self.lidar[i]
             self.viewer.draw_polyline( [l.p1, l.p2], color=(1,0,0), linewidth=1 )
+        
 
         for obj in self.drawlist:
             for f in obj.fixtures:
