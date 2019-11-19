@@ -489,7 +489,7 @@ class Marvin(gym.Env):
         return self.step(np.array([0,0,0,0]))[0]
 
     def step(self, action):
-        #self.body.ApplyForceToCenter((0, 20), True) -- Uncomment this to receive a bit of stability help
+        #self.body.ApplyForceToCenter((0, 20), True) -- # Uncomment this to receive a bit of stability help
         control_speed = False  # Should be easier as well
         if control_speed:
             self.joints[0].motorSpeed = float(SPEED_HIP  * np.clip(action[0], -1, 1))
