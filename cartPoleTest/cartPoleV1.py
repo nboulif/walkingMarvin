@@ -8,9 +8,10 @@ import sys
 import logs as logger
 
 MAX_STEP = 500
-MAX_REWARD = 1000
-MAX_EPISODE = 10000
-MAX_EPISODE_PER_UPDATE = 100
+MAX_EPISODE_BASIC = 20000
+MAX_EPISODE_UPDATE = 200
+MAX_EPISODE_BEFORE_UPDATE = 100
+POURCENTAGE_SUCCESS_MINIMUM = 100
 
 class CartPole(object):
 
@@ -18,9 +19,10 @@ class CartPole(object):
 		self.visu = False
 		self.version = 'v0'
 		self.test_version = 1
-
+		
 	def init_env(self):
 		self.env = gym.make(f'CartPole-{self.version}')
+		
 		return None
 	
 	def close_env(self):
@@ -44,10 +46,12 @@ class CartPole(object):
 
 	def run(self):
 		
-		if self.test_version == 1 or self.test_version == 2:
-			cartpole_V1(self)
+		if self.test_version == 1:		
+			cartpole_update(self)
+		elif self.test_version == 2:
+			cartpole_basic(self)
 		elif self.test_version == 3:
-			cartpole_3(self)
+			cartpole_sample(self)
 
 
 def ft_avg(lst):
@@ -69,115 +73,112 @@ def run_episode(cartpole, parameters, visu = False):
 			break
 
 	if visu:
-		logger.error(f'======== reward => {totalreward} ========')
+		logger.debug(f'======== reward => {totalreward} ========')
 	return totalreward
 
 def param_formula_1():
 	return np.random.rand(4) * 2 - 1
 	
 def param_formula_2(old_params, noise_scaling):
-	return old_params + (np.random.rand(4) * 2 - 1)*noise_scaling
+	return old_params + ( param_formula_1() * noise_scaling)
 
 
-def cartpole_V1(cartpole):
+# def cartpole_V1(cartpole):
+# 	bestparams = None
+
+# 	bestreward = 0
+
+# 	noise_scaling = 0.1
+
+# 	parameters = None
+
+# 	max_episode_BEFORE_update = MAX_EPISODE_BEFORE_UPDATE if cartpole.test_version == 1 else 1
+
+# 	for ie_episode in range(10000):
+# 		if cartpole.test_version == 1:
+# 			if ie_episode == 0:
+# 				parameters = param_formula_1()
+# 			newparams = param_formula_2(parameters, noise_scaling)
+# 			param_to_use = newparams
+# 		else:
+# 			parameters = param_formula_1()
+# 			param_to_use = parameters
+# 		reward200 = 0
+# 		reward = 0
+# 		for _ in range(MAX_EPISODE_BEFORE_UPDATE):
+# 			run = run_episode(cartpole, param_to_use, True if reward200 > 50 and cartpole.visu else False)
+# 			if run == 200:
+# 				reward200 += 1
+# 			reward += run
+
+# 		logger.warning(f'======== episode => {ie_episode} ({ie_episode * MAX_EPISODE_BEFORE_UPDATE}) (reward200 {reward200}) ========')
+
+# 		if reward > bestreward:
+# 			logger.error(f'======== bestreward => {reward} ========')
+# 			bestreward = reward
+# 			parameters = param_to_use
+# 			if (reward200/max_episode_BEFORE_update) * 100 == POURCENTAGE_SUCCESS_MINIMUM:
+# 				break
+
+def cartpole_basic(cartpole):
 	bestparams = None
 
 	bestreward = 0
 
-	noise_scaling = 0.1
+	reward200 = 0
+	
+	for ie_episode in range(MAX_EPISODE_BASIC):
+		parameters = param_formula_1()
 
-	parameters = None
-
-	max_episode_per_update = MAX_EPISODE_PER_UPDATE if cartpole.test_version == 1 else 1
-
-	for ie_episode in range(MAX_EPISODE):
-		if cartpole.test_version == 1:
-			if ie_episode == 0:
-				parameters = param_formula_1()
-			newparams = param_formula_2(parameters, noise_scaling)
-			param_to_use = newparams
-		else :
-			parameters = param_formula_1()
-			param_to_use = parameters
-		reward200 = 0
-		reward = 0
-		for _ in range(max_episode_per_update):
-			run = run_episode(cartpole, param_to_use, True if reward200 > 50 and cartpole.visu else False)
-			if run == 200:
-				reward200 += 1
-			reward += run
-
-		logger.warning(f'======== episode => {ie_episode} ({ie_episode * max_episode_per_update}) (reward200 {reward200}) ========')
-
-		if reward > bestreward:
-			logger.error(f'======== bestreward => {reward} ========')
-			bestreward = reward
-			parameters = param_to_use
-			if reward200 == max_episode_per_update:
+		reward = run_episode(cartpole, parameters, True if reward200 > (MAX_EPISODE_BASIC / 10) - 10 and cartpole.visu else False)
+		logger.warning(f'======== episode => {ie_episode} (reward200 {reward200}) ========')
+		
+		if reward == 200:
+			reward200 += 1
+			if reward200 == (MAX_EPISODE_BASIC / 10) - 10:
 				break
 
+		if reward > bestreward:
+			bestreward = reward
+			bestparams = parameters
 
-def cartpole_1(cartpole):
-	
+
+	logger.info(f'======== bestparams => {bestparams} ========')
+
+def cartpole_update(cartpole):
+	bestparams = None
+
 	noise_scaling = 0.1
-	parameters = np.random.rand(4) * 2 - 1
+	parameters = param_formula_1()
 	bestreward = 0
 
-	for ie_episode in range(MAX_EPISODE):
-		newparams = parameters + (np.random.rand(4) * 2 - 1)*noise_scaling
+
+	for ie_episode in range(MAX_EPISODE_UPDATE):
+		newparams = param_formula_2(parameters, noise_scaling)
 
 		reward200 = 0
 		reward = 0
-		for _ in range(MAX_EPISODE_PER_UPDATE):
-			run = run_episode(cartpole, newparams, True if reward200 > 50 and cartpole.visu else False)
+		for _ in range(MAX_EPISODE_BEFORE_UPDATE):
+			run = run_episode(cartpole, newparams, True if reward200 > 190 and cartpole.visu else False)
 			if run == 200:
 				reward200 += 1
 			reward += run
-		logger.warning(f'======== episode => {ie_episode} ({ie_episode * MAX_EPISODE_PER_UPDATE}) (reward200 {reward200}) ========')
+		logger.warning(f'======== episode => {ie_episode} ({ie_episode} * {MAX_EPISODE_BEFORE_UPDATE}) (reward200 {reward200}) ========')
 
 		if reward > bestreward:
 			logger.error(f'======== bestreward => {reward} ========')
 			bestreward = reward
 			parameters = newparams
-			if reward200 == MAX_EPISODE_PER_UPDATE:
-			# if reward == 200 * MAX_EPISODE_PER_UPDATE:
-			# if reward == 200:
-				break
-
-
-def cartpole_2(cartpole):
-	bestparams = None
-
-	bestreward = 0
-
-
-	for i_episode in range(MAX_EPISODE):
-		parameters = np.random.rand(4) * 2 - 1
-		reward = run_episode(cartpole, parameters)
-
-		if reward > bestreward:
-			bestreward = reward
 			bestparams = parameters
-			# considered solved if the agent lasts 200 timesteps
-			if reward == MAX_REWARD:
+			if (reward200/MAX_EPISODE_BEFORE_UPDATE) * 100 == POURCENTAGE_SUCCESS_MINIMUM:
 				break
+		
+		if ie_episode < MAX_EPISODE_UPDATE / 10 and reward200 == 0:
+			return(cartpole_update(cartpole))
 
-		if i_episode % 1000 == 0:
-			logger.warning(
-				f'======== {i_episode} (avg reward = {avg_reward}  {len(all_reward0)}-{len(all_reward50)}-{len(all_reward100)}) =========')
-			logger.info(f'======== params => {parameters} ========')
-			logger.info(f'======== reward => {reward} ========')
-
-			# avg_reward = []
-			all_reward100 = []
-			all_reward50 = []
-			all_reward0 = []
-			time.sleep(2)
-			pass
-	
 	logger.info(f'======== bestparams => {bestparams} ========')
 
-def cartpole_3(cartpole):
+def cartpole_sample(cartpole):
 	env = cartpole.env
 	
 	logger.warning(f'======== ENV INFO =========')
@@ -201,25 +202,25 @@ def cartpole_3(cartpole):
 
 		logger.info(f'obs => {observation}')
 
-		for i_step in range(100000):
+		run_episode(cartpole, np.array([-0.17501466, 0.2028902 , 0.35170482, 0.45307758]), True)
 
-			env.render()
-			logger.warning(f'=================')
+		# for i_step in range(100000):
 
-			action = env.action_space.sample()
-			logger.info(f'action => {action}')
+		# 	env.render()
+		# 	logger.warning(f'=================')
 
+		# 	action = env.action_space.sample()
+		# 	logger.info(f'action => {action}')
 
-			observation, reward, done, info = env.step(action)
-			logger.info(f'obs => {observation} {reward}')
+		# 	observation, reward, done, info = env.step(action)
+		# 	logger.info(f'obs => {observation} {reward}')
 
-			# time.sleep(0.5)
+		# 	# time.sleep(0.5)
 
-			if done:
-				logger.info(f'========Episode {i_episode} finished after {i_step} steps========')
-				time.sleep(1)
-				break
-
+		# 	if done:
+		# 		logger.info(f'========Episode {i_episode} finished after {i_step} steps========')
+		# 		time.sleep(1)
+		# 		break
 
 def parse_argv(cartpole):
 	argc = len(sys.argv)
@@ -233,7 +234,14 @@ def parse_argv(cartpole):
 				if i + 1 == argc:
 					exit(print('errror 25'))
 				i += 1
-				cartpole.set_test_version(int(sys.argv[i]))
+				if sys.argv[i] == 'sample':
+					cartpole.set_test_version(3)
+				elif sys.argv[i] == 'update':
+					cartpole.set_test_version(1)
+				elif sys.argv[i] == 'basic':
+					cartpole.set_test_version(2)
+				else :
+					cartpole.set_test_version(int(sys.argv[i]))
 			elif sys.argv[i] == '-v':
 				cartpole.set_visu(True)
 		else:
